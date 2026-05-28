@@ -1,67 +1,134 @@
 import { useState, type FormEvent } from 'react'
 import { AGE_RANGE_LABELS } from '../../types'
-import { resolveAgeRange } from '../../context/arcadeLogic'
+import {
+  getAgeError,
+  getNicknameError,
+  resolveAgeRange,
+} from '../../context/arcadeLogic'
 import { useArcade } from '../../hooks/useArcade'
 import { PixelButton } from '../../components/UI/PixelButton'
 import { PixelInput } from '../../components/UI/PixelInput'
 import { RPGCard } from '../../components/UI/RPGCard'
 
+type FieldName = 'nickname' | 'age'
+
+interface FieldErrors {
+  nickname: string | null
+  age: string | null
+}
+
+interface TouchedFields {
+  nickname: boolean
+  age: boolean
+}
+
+const emptyErrors = (): FieldErrors => ({ nickname: null, age: null })
+const emptyTouched = (): TouchedFields => ({ nickname: false, age: false })
+
 export function RegisterView() {
   const { registerStudent, goToScreen } = useArcade()
   const [nickname, setNickname] = useState('')
   const [ageInput, setAgeInput] = useState('')
-  const [error, setError] = useState('')
+  const [errors, setErrors] = useState<FieldErrors>(emptyErrors)
+  const [touched, setTouched] = useState<TouchedFields>(emptyTouched)
+  const [submitAttempted, setSubmitAttempted] = useState(false)
 
   const previewAge = parseInt(ageInput, 10)
   const previewRange =
-    Number.isInteger(previewAge) && previewAge >= 6
+    !getAgeError(ageInput) && Number.isInteger(previewAge)
       ? resolveAgeRange(previewAge)
       : null
 
+  const validateField = (field: FieldName, value: string): string | null => {
+    return field === 'nickname' ? getNicknameError(value) : getAgeError(value)
+  }
+
+  const validateAll = (): FieldErrors => ({
+    nickname: validateField('nickname', nickname),
+    age: validateField('age', ageInput),
+  })
+
+  const showError = (field: FieldName): string | undefined => {
+    const message = errors[field]
+    if (!message) return undefined
+    if (submitAttempted || touched[field]) return message
+    return undefined
+  }
+
+  const handleBlur = (field: FieldName) => {
+    setTouched((prev) => ({ ...prev, [field]: true }))
+    setErrors((prev) => ({
+      ...prev,
+      [field]: validateField(field, field === 'nickname' ? nickname : ageInput),
+    }))
+  }
+
+  const handleNicknameChange = (value: string) => {
+    setNickname(value)
+    if (submitAttempted || touched.nickname) {
+      setErrors((prev) => ({
+        ...prev,
+        nickname: validateField('nickname', value),
+      }))
+    }
+  }
+
+  const handleAgeChange = (value: string) => {
+    setAgeInput(value)
+    if (submitAttempted || touched.age) {
+      setErrors((prev) => ({
+        ...prev,
+        age: validateField('age', value),
+      }))
+    }
+  }
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    setError('')
-    try {
-      registerStudent(nickname, parseInt(ageInput, 10))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrarse')
-    }
+    setSubmitAttempted(true)
+    setTouched({ nickname: true, age: true })
+
+    const nextErrors = validateAll()
+    setErrors(nextErrors)
+
+    if (nextErrors.nickname || nextErrors.age) return
+
+    registerStudent(nickname, parseInt(ageInput, 10))
   }
 
   return (
     <main className="flex min-h-svh items-center justify-center px-4 py-8">
       <RPGCard title="NUEVO JUGADOR" className="w-full max-w-md">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
           <PixelInput
             label="Nickname"
+            name="nickname"
             value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
+            onChange={(e) => handleNicknameChange(e.target.value)}
+            onBlur={() => handleBlur('nickname')}
             placeholder="Ej: MichiPro"
             maxLength={20}
             autoFocus
-            required
+            autoComplete="nickname"
+            error={showError('nickname')}
           />
 
           <PixelInput
             label="Edad"
-            type="number"
-            min={6}
-            max={99}
+            name="age"
+            type="text"
+            inputMode="numeric"
             value={ageInput}
-            onChange={(e) => setAgeInput(e.target.value)}
+            onChange={(e) => handleAgeChange(e.target.value)}
+            onBlur={() => handleBlur('age')}
             placeholder="Ej: 10"
-            required
+            autoComplete="off"
+            error={showError('age')}
           />
 
-          {previewRange && (
+          {previewRange && !showError('age') && (
             <p className="text-center text-arcade-gold">
               Rango: {AGE_RANGE_LABELS[previewRange]}
-            </p>
-          )}
-
-          {error && (
-            <p className="text-center text-red-400" role="alert">
-              {error}
             </p>
           )}
 

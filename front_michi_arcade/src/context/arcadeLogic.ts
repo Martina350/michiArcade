@@ -6,8 +6,46 @@ import type {
   StudentSession,
 } from '../types'
 
-const MIN_AGE = 6
-const MAX_AGE = 99
+export const REGISTRATION_MIN_AGE = 6
+export const REGISTRATION_MAX_AGE = 99
+
+const MIN_AGE = REGISTRATION_MIN_AGE
+const MAX_AGE = REGISTRATION_MAX_AGE
+
+export function getNicknameError(nickname: string): string | null {
+  const trimmed = nickname.trim()
+  if (!trimmed) {
+    return '¡Hey! Necesitas un nickname para jugar.'
+  }
+  if (trimmed.length < 2) {
+    return 'Tu nickname debe tener al menos 2 caracteres.'
+  }
+  if (trimmed.length > 20) {
+    return 'El nickname no puede superar los 20 caracteres.'
+  }
+  if (!/^[\p{L}\p{N}_\s-]+$/u.test(trimmed)) {
+    return 'Usa solo letras, números, espacios, guiones o guion bajo.'
+  }
+  return null
+}
+
+export function getAgeError(ageInput: string): string | null {
+  const trimmed = ageInput.trim()
+  if (!trimmed) {
+    return '¿Cuántos años tienes? Escríbelo aquí.'
+  }
+  if (!/^\d+$/.test(trimmed)) {
+    return 'La edad debe ser un número entero, sin letras ni símbolos.'
+  }
+  const age = Number(trimmed)
+  if (age < MIN_AGE) {
+    return `Debes tener al menos ${MIN_AGE} años para entrar al arcade.`
+  }
+  if (age > MAX_AGE) {
+    return `La edad máxima permitida es ${MAX_AGE} años.`
+  }
+  return null
+}
 
 export function resolveAgeRange(age: number): AgeRange {
   if (age >= 6 && age <= 9) return 'junior'
@@ -19,15 +57,13 @@ export function validateRegistration(
   nickname: string,
   age: number,
 ): { ok: true } | { ok: false; error: string } {
-  const trimmed = nickname.trim()
-  if (trimmed.length < 2) {
-    return { ok: false, error: 'El nickname debe tener al menos 2 caracteres.' }
+  const nicknameError = getNicknameError(nickname)
+  if (nicknameError) {
+    return { ok: false, error: nicknameError }
   }
-  if (!Number.isInteger(age) || age < MIN_AGE || age > MAX_AGE) {
-    return {
-      ok: false,
-      error: `La edad debe ser un número entre ${MIN_AGE} y ${MAX_AGE}.`,
-    }
+  const ageError = getAgeError(String(age))
+  if (ageError) {
+    return { ok: false, error: ageError }
   }
   return { ok: true }
 }
