@@ -1,15 +1,22 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Game } from '../../types'
 import {
   BIOME_PALETTES,
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
-  drawCloud,
-  drawPixelRect,
+  drawBorder,
+  drawCastleTile,
+  drawLevelTile,
+  drawStartTile,
   getBiomeFromGames,
-  NODE_RADIUS,
+  getCanvasCoords,
+  getMapNodesForBiome,
   sortGamesByOrder,
 } from './mapCanvasUtils'
+import mapa1 from '../../assets/img/mapa1.png'
+import mapa2 from '../../assets/img/mapa2.png'
+import mapa3 from '../../assets/img/mapa3.png'
+import gatoEtapas from '../../assets/img/gatoEtapas.png'
 
 interface MapCanvasProps {
   games: Game[]
@@ -20,103 +27,139 @@ interface MapCanvasProps {
 
 export function MapCanvas({
   games,
-  isUnlocked,
   isCompleted,
   onNodeClick,
 }: MapCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const gamesRef = useRef(games)
-
-  gamesRef.current = games
-
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const sorted = sortGamesByOrder(gamesRef.current)
-    const biome = getBiomeFromGames(sorted)
-    const palette = BIOME_PALETTES[biome]
-
-    ctx.imageSmoothingEnabled = false
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-
-    drawPixelRect(ctx, 0, 0, CANVAS_WIDTH, 140, palette.sky)
-    drawCloud(ctx, 80, 40)
-    drawCloud(ctx, 320, 60)
-    drawCloud(ctx, 500, 35)
-
-    drawPixelRect(ctx, 0, 140, CANVAS_WIDTH, 60, palette.ground)
-    drawPixelRect(ctx, 0, 200, CANVAS_WIDTH, 200, '#2E7D32')
-
-    for (let i = 0; i < 8; i++) {
-      drawPixelRect(ctx, i * 90, 210, 40, 16, '#1B5E20')
-      drawPixelRect(ctx, i * 90 + 50, 195, 30, 20, '#388E3C')
-    }
-
-    if (sorted.length > 1) {
-      ctx.strokeStyle = palette.path
-      ctx.lineWidth = 10
-      ctx.lineCap = 'square'
-      ctx.beginPath()
-      const first = sorted[0].mapPosition
-      ctx.moveTo(first.x, first.y)
-      for (let i = 1; i < sorted.length; i++) {
-        const pos = sorted[i].mapPosition
-        const prev = sorted[i - 1].mapPosition
-        const midX = (prev.x + pos.x) / 2
-        ctx.lineTo(midX, prev.y)
-        ctx.lineTo(midX, pos.y)
-        ctx.lineTo(pos.x, pos.y)
-      }
-      ctx.stroke()
-    }
-
-    sorted.forEach((game, index) => {
-      const { x, y } = game.mapPosition
-      const unlocked = isUnlocked(game.id)
-      const completed = isCompleted(game.id)
-
-      drawPixelRect(ctx, x - 28, y + 18, 56, 12, unlocked ? '#5D4037' : '#424242')
-
-      ctx.fillStyle = unlocked
-        ? completed
-          ? palette.accent
-          : '#0D47A1'
-        : '#616161'
-      ctx.beginPath()
-      ctx.arc(x, y, NODE_RADIUS, 0, Math.PI * 2)
-      ctx.fill()
-
-      ctx.strokeStyle = '#000'
-      ctx.lineWidth = 3
-      ctx.stroke()
-
-      ctx.fillStyle = unlocked ? '#E0F7FF' : '#9E9E9E'
-      ctx.font = 'bold 14px monospace'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(String(index + 1), x, y - 2)
-
-      if (!unlocked) {
-        ctx.fillStyle = '#000'
-        ctx.font = '16px monospace'
-        ctx.fillText('🔒', x, y - 28)
-      } else if (completed) {
-        ctx.fillText('★', x, y - 30)
-      }
-
-      ctx.fillStyle = '#fff'
-      ctx.font = '10px monospace'
-      ctx.fillText(game.title.slice(0, 12), x, y + 38)
-    })
-  }, [isUnlocked, isCompleted])
+  const [currentNodeId, setCurrentNodeId] = useState<string>('start')
+  const [dialogText, setDialogText] = useState<string>(
+    '¡Mapa interactivo listo! Usa las Flechas del teclado para moverte y ENTER para jugar.'
+  )
+  const [frame, setFrame] = useState(0)
+  const [avatarImg, setAvatarImg] = useState<{ img: HTMLImageElement; width: number; height: number } | null>(null)
 
   useEffect(() => {
-    draw()
-  }, [draw, games])
+    const img = new Image()
+    img.src = gatoEtapas
+    img.onload = () => {
+      const targetHeight = 32
+      const ratio = img.naturalWidth / img.naturalHeight
+      const targetWidth = targetHeight * ratio
+      setAvatarImg({
+        img,
+        width: targetWidth,
+        height: targetHeight,
+      })
+    }
+  }, [])
 
+  const sorted = sortGamesByOrder(games)
+  const biome = getBiomeFromGames(sorted)
+  const activeNodes = getMapNodesForBiome(biome)
+  const mapImage = biome === 'meadow' ? mapa1 : biome === 'canyon' ? mapa2 : mapa3
+
+  // Reset character position to start when games or biomes change (handled during render)
+  const [prevGames, setPrevGames] = useState(games)
+  if (games !== prevGames) {
+    setPrevGames(games)
+    setCurrentNodeId('start')
+    setDialogText('¡Has entrado a un nuevo mundo! Usa las Flechas para explorar.')
+  }
+
+  // All nodes are unlocked for immediate play testing
+  const checkNodeUnlocked = useCallback(
+    (nodeId: string): boolean => {
+      return !!nodeId
+    },
+    []
+  )
+
+  const triggerNodeAction = useCallback(
+    (nodeId: string) => {
+      const node = activeNodes[nodeId]
+      if (!node) return
+
+      switch (node.type) {
+        case 'START':
+          setDialogText('🚩 Punto de inicio. ¡Listo para jugar!')
+          break
+        case 'LEVEL': {
+          const lvl = node.levelNumber!
+          if (lvl <= 3) {
+            const game = games[lvl - 1]
+            if (game) {
+              const comp = isCompleted(game.id)
+              setDialogText(
+                `🎮 Nivel ${lvl}: ${game.title} - ${game.description}. ${
+                  comp ? '★ ¡Ya lo completaste!' : 'Presiona ENTER o haz clic para Jugar.'
+                }`
+              )
+            }
+          } else {
+            setDialogText(`🔒 Nivel ${lvl} (Desafío Especial). ¡Próximamente en MichiArcade!`)
+          }
+          break
+        }
+        case 'CASTLE':
+          setDialogText('👑 ¡Castillo Final del Legado! Fin de la etapa de edad.')
+          break
+        default:
+          setDialogText('▶ Te mueves por los senderos del mapa.')
+      }
+    },
+    [games, isCompleted, activeNodes]
+  )
+
+  const handleActivateNode = useCallback(
+    (nodeId: string) => {
+      const node = activeNodes[nodeId]
+      if (node && node.type === 'LEVEL') {
+        const lvlNum = node.levelNumber!
+        if (lvlNum <= 3) {
+          const game = games[lvlNum - 1]
+          if (game) {
+            onNodeClick(game)
+          }
+        }
+      }
+    },
+    [games, onNodeClick, activeNodes]
+  )
+
+  // Listen to keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Enter'].includes(e.key)) {
+        e.preventDefault()
+      }
+
+      const node = activeNodes[currentNodeId]
+      if (!node) return
+
+      let dir: 'up' | 'down' | 'left' | 'right' | null = null
+      if (e.key === 'ArrowUp') dir = 'up'
+      else if (e.key === 'ArrowDown') dir = 'down'
+      else if (e.key === 'ArrowLeft') dir = 'left'
+      else if (e.key === 'ArrowRight') dir = 'right'
+
+      if (dir) {
+        const nextId = node.connections[dir]
+        if (nextId) {
+          if (checkNodeUnlocked(nextId)) {
+            setCurrentNodeId(nextId)
+            triggerNodeAction(nextId)
+          }
+        }
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        handleActivateNode(currentNodeId)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [currentNodeId, checkNodeUnlocked, triggerNodeAction, handleActivateNode, activeNodes])
+
+  // Mouse clicks handler
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -128,29 +171,243 @@ export function MapCanvas({
       const cx = (event.clientX - rect.left) * scaleX
       const cy = (event.clientY - rect.top) * scaleY
 
-      for (const game of gamesRef.current) {
-        if (!isUnlocked(game.id)) continue
-        const { x, y } = game.mapPosition
+      let closestNodeId: string | null = null
+      let minDistance = 24 // Click radius
+
+      for (const [id, node] of Object.entries(activeNodes)) {
+        const { x, y } = getCanvasCoords(node.col, node.row)
         const dx = cx - x
         const dy = cy - y
-        if (dx * dx + dy * dy <= NODE_RADIUS * NODE_RADIUS * 1.8) {
-          onNodeClick(game)
-          return
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < minDistance) {
+          closestNodeId = id
+          minDistance = dist
+        }
+      }
+
+      if (closestNodeId) {
+        if (checkNodeUnlocked(closestNodeId)) {
+          setCurrentNodeId(closestNodeId)
+          triggerNodeAction(closestNodeId)
+          handleActivateNode(closestNodeId)
         }
       }
     }
 
     canvas.addEventListener('click', handleClick)
     return () => canvas.removeEventListener('click', handleClick)
-  }, [isUnlocked, onNodeClick])
+  }, [checkNodeUnlocked, triggerNodeAction, handleActivateNode, activeNodes])
+
+  // Animation Loop
+  useEffect(() => {
+    let animId: number
+    const update = () => {
+      setFrame((f) => f + 1)
+      animId = requestAnimationFrame(update)
+    }
+    animId = requestAnimationFrame(update)
+    return () => cancelAnimationFrame(animId)
+  }, [])
+
+  // Drawing Loop
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const palette = BIOME_PALETTES[biome]
+
+    // Clear canvas so the CSS background image shines through cleanly
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+
+    // 1. Draw paths lines on top of the image to show connection paths
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    // First pass: Thick outer outline
+    ctx.strokeStyle = palette.pathBorder
+    ctx.lineWidth = 8
+    ctx.beginPath()
+    Object.values(activeNodes).forEach((node) => {
+      const fromCoords = getCanvasCoords(node.col, node.row)
+      if (node.connections.right) {
+        const next = activeNodes[node.connections.right]
+        if (next) {
+          const toCoords = getCanvasCoords(next.col, next.row)
+          ctx.moveTo(fromCoords.x, fromCoords.y)
+          ctx.lineTo(toCoords.x, toCoords.y)
+        }
+      }
+      if (node.connections.down) {
+        const next = activeNodes[node.connections.down]
+        if (next) {
+          const toCoords = getCanvasCoords(next.col, next.row)
+          ctx.moveTo(fromCoords.x, fromCoords.y)
+          ctx.lineTo(toCoords.x, toCoords.y)
+        }
+      }
+    })
+    ctx.stroke()
+
+    // Second pass: Thinner center path
+    ctx.strokeStyle = palette.pathCenter
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    Object.values(activeNodes).forEach((node) => {
+      const fromCoords = getCanvasCoords(node.col, node.row)
+      if (node.connections.right) {
+        const next = activeNodes[node.connections.right]
+        if (next) {
+          const toCoords = getCanvasCoords(next.col, next.row)
+          ctx.moveTo(fromCoords.x, fromCoords.y)
+          ctx.lineTo(toCoords.x, toCoords.y)
+        }
+      }
+      if (node.connections.down) {
+        const next = activeNodes[node.connections.down]
+        if (next) {
+          const toCoords = getCanvasCoords(next.col, next.row)
+          ctx.moveTo(fromCoords.x, fromCoords.y)
+          ctx.lineTo(toCoords.x, toCoords.y)
+        }
+      }
+    })
+    ctx.stroke()
+
+    // 2. Draw node points and interactive tiles
+    Object.values(activeNodes).forEach((node) => {
+      const hovered = currentNodeId === node.id
+
+      switch (node.type) {
+        case 'START':
+          drawStartTile(ctx, node.col, node.row, biome, hovered)
+          break
+        case 'LEVEL': {
+          const lvl = node.levelNumber!
+          let completed = false
+          if (lvl <= 3) {
+            const game = games[lvl - 1]
+            if (game) {
+              completed = isCompleted(game.id)
+            }
+          }
+          // All levels are always unlocked (true)
+          drawLevelTile(ctx, node.col, node.row, lvl, true, completed, hovered)
+          break
+        }
+        case 'CASTLE':
+          // onlyDrawHelp = true: only draw floating HELP bubble, since castle is in the image background
+          drawCastleTile(ctx, node.col, node.row, biome, frame, true)
+          break
+      }
+    })
+
+    // 3. Draw the Player's Michi Avatar at the current node position
+    const currentPos = activeNodes[currentNodeId]
+    if (currentPos) {
+      const { x, y } = getCanvasCoords(currentPos.col, currentPos.row)
+      const bob = Math.sin(frame * 0.12) * 2
+
+      if (avatarImg) {
+        ctx.drawImage(
+          avatarImg.img,
+          x - avatarImg.width / 2,
+          y - avatarImg.height + 8 + bob,
+          avatarImg.width,
+          avatarImg.height
+        )
+      } else {
+        const cy = y - 4 + bob
+        // Ears
+        ctx.fillStyle = '#FF9F43'
+        ctx.beginPath()
+        ctx.moveTo(x - 9, cy - 6)
+        ctx.lineTo(x - 4, cy - 14)
+        ctx.lineTo(x - 1, cy - 6)
+        ctx.moveTo(x + 1, cy - 6)
+        ctx.lineTo(x + 4, cy - 14)
+        ctx.lineTo(x + 9, cy - 6)
+        ctx.fill()
+        ctx.strokeStyle = '#000000'
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+
+        // Inner ears
+        ctx.fillStyle = '#FFB8B8'
+        ctx.beginPath()
+        ctx.moveTo(x - 8, cy - 7)
+        ctx.lineTo(x - 5, cy - 11)
+        ctx.lineTo(x - 3, cy - 7)
+        ctx.moveTo(x + 3, cy - 7)
+        ctx.lineTo(x + 5, cy - 11)
+        ctx.lineTo(x + 8, cy - 7)
+        ctx.fill()
+
+        // Face
+        ctx.fillStyle = '#FF9F43'
+        ctx.beginPath()
+        ctx.arc(x, cy, 9, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.strokeStyle = '#000000'
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+
+        // Eyes
+        ctx.fillStyle = '#000000'
+        ctx.fillRect(x - 4, cy - 2, 2, 2)
+        ctx.fillRect(x + 2, cy - 2, 2, 2)
+
+        // Pink Nose
+        ctx.fillStyle = '#FF8A8A'
+        ctx.fillRect(x - 1, cy + 1, 2, 1.5)
+
+        // Whiskers
+        ctx.strokeStyle = '#000000'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(x - 8, cy + 1)
+        ctx.lineTo(x - 13, cy)
+        ctx.moveTo(x - 8, cy + 2)
+        ctx.lineTo(x - 14, cy + 3)
+        ctx.moveTo(x + 8, cy + 1)
+        ctx.lineTo(x + 13, cy)
+        ctx.moveTo(x + 8, cy + 2)
+        ctx.lineTo(x + 14, cy + 3)
+        ctx.stroke()
+      }
+    }
+
+    // 4. Draw 3D pipe border frame
+    drawBorder(ctx, biome)
+  }, [currentNodeId, games, isCompleted, frame, checkNodeUnlocked, activeNodes, biome, avatarImg])
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={CANVAS_WIDTH}
-      height={CANVAS_HEIGHT}
-      className="pixel-canvas w-full max-w-4xl cursor-crosshair border-4 border-black"
-      aria-label="Mapa de niveles del arcade"
-    />
+    <div className="flex flex-col items-center">
+      <div className="relative w-full max-w-4xl overflow-hidden rounded bg-black shadow-2xl">
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_WIDTH}
+          height={CANVAS_HEIGHT}
+          style={{
+            backgroundImage: `url(${mapImage})`,
+            backgroundSize: '100% 100%',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+          className="pixel-canvas h-auto w-full cursor-crosshair"
+          aria-label="Mapa de niveles del arcade estilo retro"
+        />
+      </div>
+
+      {dialogText && (
+        <div className="mt-4 w-full max-w-4xl border-4 border-black bg-[#051633] p-3 shadow-lg pixel-border-gold">
+          <p className="font-pixel text-[8px] leading-relaxed text-[#e0f7ff]">
+            <span className="text-[#ffd54f]">💬 Michi-Guía: </span>
+            {dialogText}
+          </p>
+        </div>
+      )}
+    </div>
   )
 }

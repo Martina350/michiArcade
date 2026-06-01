@@ -50,9 +50,13 @@ export function MapView() {
       </header>
 
       <section className="mx-auto w-full max-w-4xl flex-1">
-        <p className="mb-3 font-pixel text-[8px] text-arcade-cyan">
-          ▶ Selecciona un nivel desbloqueado en el mapa
-        </p>
+        <div className="mb-3 flex flex-wrap justify-between gap-2 font-pixel text-[8px] text-arcade-cyan">
+          <p>▶ Selecciona un nivel desbloqueado en el mapa</p>
+          <p className="text-arcade-gold text-[7px]">
+            🕹️ Moverse: Flechas [↑][↓][←][→] y [ENTER] | O haz Clic
+          </p>
+        </div>
+
         <MapCanvas
           games={gamesForSession}
           isUnlocked={isGameUnlocked}
@@ -62,7 +66,7 @@ export function MapView() {
       </section>
 
       <footer className="mt-6 text-center font-pixel text-[6px] text-arcade-cyan/50">
-        Completa niveles en orden para desbloquear los siguientes
+        Completa niveles en orden para desbloquear los siguientes y expandir tu legado
       </footer>
     </main>
   )

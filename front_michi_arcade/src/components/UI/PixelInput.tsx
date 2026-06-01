@@ -31,10 +31,10 @@ export function PixelInput({
         aria-invalid={hasError}
         aria-describedby={hasError ? `${inputId}-error` : undefined}
         className={[
-          'font-pixel w-full border-4 bg-arcade-dark px-3 py-3 text-[10px] outline-none focus:ring-0',
+          'font-pixel w-full border-4 bg-[#1c0d02] text-[#ffd54f] placeholder-[#8f563b]/60 px-3 py-3 text-[10px] outline-none focus:ring-0',
           hasError
             ? 'border-red-500 text-red-100 focus:border-red-400'
-            : 'border-arcade-cyan text-arcade-cyan focus:border-arcade-gold',
+            : 'border-[#8f563b] focus:border-arcade-gold',
           className,
         ].join(' ')}
         {...props}

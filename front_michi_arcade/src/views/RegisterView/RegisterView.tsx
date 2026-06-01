@@ -6,9 +6,11 @@ import {
   resolveAgeRange,
 } from '../../context/arcadeLogic'
 import { useArcade } from '../../hooks/useArcade'
-import { PixelButton } from '../../components/UI/PixelButton'
 import { PixelInput } from '../../components/UI/PixelInput'
-import { RPGCard } from '../../components/UI/RPGCard'
+
+import buttonBack from '../../assets/img/buttonBack.png'
+import buttonEntrar from '../../assets/img/buttonEntrar.png'
+import fondoMadera from '../../assets/img/fondoMadera.png'
 
 type FieldName = 'nickname' | 'age'
 
@@ -98,54 +100,79 @@ export function RegisterView() {
 
   return (
     <main className="flex min-h-svh items-center justify-center px-4 py-8">
-      <RPGCard title="NUEVO JUGADOR" className="w-full max-w-md">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
-          <PixelInput
-            label="Nickname"
-            name="nickname"
-            value={nickname}
-            onChange={(e) => handleNicknameChange(e.target.value)}
-            onBlur={() => handleBlur('nickname')}
-            placeholder="Ej: MichiPro"
-            maxLength={20}
-            autoFocus
-            autoComplete="nickname"
-            error={showError('nickname')}
-          />
+      <div
+        style={{ backgroundImage: `url(${fondoMadera})` }}
+        className="relative w-full max-w-md border-8 border-[#3b2314] bg-repeat p-2 shadow-[12px_12px_0_0_#000] pixel-canvas"
+      >
+        <div className="flex flex-col gap-6 border-4 border-[#8f563b] bg-transparent p-6 font-pixel text-[8px] leading-loose text-arcade-cyan">
+          <div className="border-b-4 border-[#8f563b] pb-3 text-center">
+            <h2 className="font-pixel text-[12px] uppercase tracking-wide text-arcade-gold drop-shadow-[2px_2px_0_#000]">
+              NUEVO JUGADOR
+            </h2>
+          </div>
 
-          <PixelInput
-            label="Edad"
-            name="age"
-            type="text"
-            inputMode="numeric"
-            value={ageInput}
-            onChange={(e) => handleAgeChange(e.target.value)}
-            onBlur={() => handleBlur('age')}
-            placeholder="Ej: 10"
-            autoComplete="off"
-            error={showError('age')}
-          />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+            <PixelInput
+              label="Michiname"
+              name="nickname"
+              value={nickname}
+              onChange={(e) => handleNicknameChange(e.target.value)}
+              onBlur={() => handleBlur('nickname')}
+              placeholder="Ej: MichiPro"
+              maxLength={20}
+              autoFocus
+              autoComplete="nickname"
+              error={showError('nickname')}
+            />
 
-          {previewRange && !showError('age') && (
-            <p className="text-center text-arcade-gold">
-              Rango: {AGE_RANGE_LABELS[previewRange]}
-            </p>
-          )}
+            <PixelInput
+              label="Edad"
+              name="age"
+              type="text"
+              inputMode="numeric"
+              value={ageInput}
+              onChange={(e) => handleAgeChange(e.target.value)}
+              onBlur={() => handleBlur('age')}
+              placeholder="Ej: 10"
+              autoComplete="off"
+              error={showError('age')}
+            />
 
-          <PixelButton type="submit" variant="gold" fullWidth>
-            ENTRAR AL MAPA
-          </PixelButton>
+            {previewRange && !showError('age') && (
+              <p className="text-center text-arcade-gold drop-shadow-[1px_1px_0_#000]">
+                Rango: {AGE_RANGE_LABELS[previewRange]}
+              </p>
+            )}
 
-          <PixelButton
-            type="button"
-            variant="ghost"
-            fullWidth
-            onClick={() => goToScreen('home')}
-          >
-            ← VOLVER
-          </PixelButton>
-        </form>
-      </RPGCard>
+            <div className="mt-2 flex flex-col items-center gap-4">
+              <button
+                type="submit"
+                className="cursor-pointer border-none bg-transparent p-0 transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none"
+              >
+                <img
+                  src={buttonEntrar}
+                  alt="ENTRAR"
+                  className="pixel-canvas h-auto w-full max-w-[220px]"
+                  draggable={false}
+                />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => goToScreen('home')}
+                className="cursor-pointer border-none bg-transparent p-0 transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none"
+              >
+                <img
+                  src={buttonBack}
+                  alt="VOLVER"
+                  className="pixel-canvas h-auto w-full max-w-[340px]"
+                  draggable={false}
+                />
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </main>
   )
 }
