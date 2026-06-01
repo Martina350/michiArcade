@@ -6,8 +6,8 @@ import type {
   StudentSession,
 } from '../types'
 
-export const REGISTRATION_MIN_AGE = 6
-export const REGISTRATION_MAX_AGE = 99
+export const REGISTRATION_MIN_AGE = 4
+export const REGISTRATION_MAX_AGE = 19
 
 const MIN_AGE = REGISTRATION_MIN_AGE
 const MAX_AGE = REGISTRATION_MAX_AGE
@@ -15,13 +15,13 @@ const MAX_AGE = REGISTRATION_MAX_AGE
 export function getNicknameError(nickname: string): string | null {
   const trimmed = nickname.trim()
   if (!trimmed) {
-    return '¡Hey! Necesitas un nickname para jugar.'
+    return '¡Hey! Necesitas un michiname para jugar.'
   }
   if (trimmed.length < 2) {
-    return 'Tu nickname debe tener al menos 2 caracteres.'
+    return 'Tu michiname debe tener al menos 2 caracteres.'
   }
   if (trimmed.length > 20) {
-    return 'El nickname no puede superar los 20 caracteres.'
+    return 'El michiname no puede superar los 20 caracteres.'
   }
   if (!/^[\p{L}\p{N}_\s-]+$/u.test(trimmed)) {
     return 'Usa solo letras, números, espacios, guiones o guion bajo.'
@@ -48,9 +48,9 @@ export function getAgeError(ageInput: string): string | null {
 }
 
 export function resolveAgeRange(age: number): AgeRange {
-  if (age >= 6 && age <= 9) return 'junior'
-  if (age >= 10 && age <= 13) return 'master'
-  return 'legend'
+  if (age >= 4 && age <= 9) return 'kids'
+  if (age >= 10 && age <= 14) return 'junior'
+  return 'teens'
 }
 
 export function validateRegistration(
@@ -87,25 +87,11 @@ export function filterGamesByAgeRange(
 
 export function computeUnlockedGameIds(
   gamesInRange: readonly Game[],
-  completedIds: ReadonlySet<string>,
+  _completedIds: ReadonlySet<string>,
 ): Set<string> {
-  const sorted = [...gamesInRange].sort(
-    (a, b) => a.unlockOrder - b.unlockOrder,
-  )
   const unlocked = new Set<string>()
-
-  for (let i = 0; i < sorted.length; i++) {
-    const game = sorted[i]
-    if (i === 0) {
-      unlocked.add(game.id)
-      continue
-    }
-    const prev = sorted[i - 1]
-    if (completedIds.has(prev.id)) {
-      unlocked.add(game.id)
-    } else {
-      break
-    }
+  for (const game of gamesInRange) {
+    unlocked.add(game.id)
   }
   return unlocked
 }

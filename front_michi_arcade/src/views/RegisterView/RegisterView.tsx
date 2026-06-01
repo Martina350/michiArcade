@@ -9,7 +9,7 @@ import { useArcade } from '../../hooks/useArcade'
 import { PixelInput } from '../../components/UI/PixelInput'
 
 import buttonBack from '../../assets/img/buttonBack.png'
-import buttonEntrar from '../../assets/img/buttonEntrar.png'
+import buttonIngresar from '../../assets/img/ingresarButton.png'
 import fondoMadera from '../../assets/img/fondoMadera.png'
 
 type FieldName = 'nickname' | 'age'
@@ -150,9 +150,9 @@ export function RegisterView() {
                 className="cursor-pointer border-none bg-transparent p-0 transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none"
               >
                 <img
-                  src={buttonEntrar}
-                  alt="ENTRAR"
-                  className="pixel-canvas h-auto w-full max-w-[220px]"
+                  src={buttonIngresar}
+                  alt="INGRESAR"
+                  className="pixel-canvas h-auto w-full max-w-[220px] drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] hover:drop-shadow-[0_20px_35px_rgba(255,215,0,0.4)"
                   draggable={false}
                 />
               </button>
@@ -165,7 +165,7 @@ export function RegisterView() {
                 <img
                   src={buttonBack}
                   alt="VOLVER"
-                  className="pixel-canvas h-auto w-full max-w-[340px]"
+                  className="pixel-canvas h-auto w-full max-w-[220px] drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] hover:drop-shadow-[0_20px_35px_rgba(255,215,0,0.4)"
                   draggable={false}
                 />
               </button>

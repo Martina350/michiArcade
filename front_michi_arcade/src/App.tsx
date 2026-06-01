@@ -4,7 +4,7 @@ import { FeedbackOverlay } from './components/FeedbackOverlay/FeedbackOverlay'
 import { GameModal } from './components/GameModal/GameModal'
 import { HomeView } from './views/HomeView/HomeView'
 import { RegisterView } from './views/RegisterView/RegisterView'
-import { MapView } from './views/MapView/MapView'
+import { MapView } from './views/GameSelectorView/GameSelectorView'
 import fondoMichi from './assets/img/fondoMichi.png'
 
 function ScreenRouter() {

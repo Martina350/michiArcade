@@ -10,12 +10,12 @@ export const STORAGE_KEYS = {
   completedGames: 'michi_arcade_completed_games',
 } as const
 
-export type AgeRange = 'junior' | 'master' | 'legend'
+export type AgeRange = 'kids' | 'junior' | 'teens'
 
 export const AGE_RANGE_LABELS: Record<AgeRange, string> = {
-  junior: 'Junior (6-9)',
-  master: 'Master (10-13)',
-  legend: 'Legend (14+)',
+  kids: 'Kids (4-9)',
+  junior: 'Junior (10-14)',
+  teens: 'Teens (15-19)',
 }
 
 export type ArcadeScreen = 'home' | 'register' | 'map'

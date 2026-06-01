@@ -26,7 +26,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'coin-dash-junior',
     title: 'Coin Dash',
     description: 'Corre y recoge monedas Michi',
-    ageRange: 'junior',
+    ageRange: 'kids',
     embedUrl: '/demo-game.html',
     biome: 'meadow',
     mapPosition: { x: 100, y: 300 },
@@ -36,7 +36,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'piggy-jump-junior',
     title: 'Piggy Jump',
     description: 'Salta entre plataformas doradas',
-    ageRange: 'junior',
+    ageRange: 'kids',
     embedUrl: '/demo-game.html',
     biome: 'meadow',
     mapPosition: { x: 280, y: 220 },
@@ -46,7 +46,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'savings-run-junior',
     title: 'Savings Run',
     description: 'Ahorra antes de que acabe el tiempo',
-    ageRange: 'junior',
+    ageRange: 'kids',
     embedUrl: '/demo-game.html',
     biome: 'meadow',
     mapPosition: { x: 460, y: 280 },
@@ -56,7 +56,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'budget-quest-master',
     title: 'Budget Quest',
     description: 'Arma tu presupuesto semanal',
-    ageRange: 'master',
+    ageRange: 'junior',
     embedUrl: '/demo-game.html',
     biome: 'canyon',
     mapPosition: { x: 120, y: 310 },
@@ -66,7 +66,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'trade-tycoon-master',
     title: 'Trade Tycoon',
     description: 'Compra y vende en el mercado',
-    ageRange: 'master',
+    ageRange: 'junior',
     embedUrl: '/demo-game.html',
     biome: 'canyon',
     mapPosition: { x: 300, y: 230 },
@@ -76,7 +76,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'vault-defender-master',
     title: 'Vault Defender',
     description: 'Protege la bóveda del colegio',
-    ageRange: 'master',
+    ageRange: 'junior',
     embedUrl: '/demo-game.html',
     biome: 'canyon',
     mapPosition: { x: 480, y: 290 },
@@ -86,7 +86,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'market-legends-legend',
     title: 'Market Legends',
     description: 'Domina la bolsa Michi',
-    ageRange: 'legend',
+    ageRange: 'teens',
     embedUrl: '/demo-game.html',
     biome: 'sky',
     mapPosition: { x: 110, y: 280 },
@@ -96,7 +96,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'crypto-cat-legend',
     title: 'Crypto Cat',
     description: 'Estrategia financiera avanzada',
-    ageRange: 'legend',
+    ageRange: 'teens',
     embedUrl: '/demo-game.html',
     biome: 'sky',
     mapPosition: { x: 290, y: 210 },
@@ -106,7 +106,7 @@ export const GAMES_CATALOG: readonly Game[] = [
     id: 'empire-builder-legend',
     title: 'Empire Builder',
     description: 'Construye tu imperio arcade',
-    ageRange: 'legend',
+    ageRange: 'teens',
     embedUrl: '/demo-game.html',
     biome: 'sky',
     mapPosition: { x: 470, y: 270 },
@@ -183,7 +183,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
 
   const registerStudent = useCallback((nickname: string, age: number) => {
     const validation = validateRegistration(nickname, age)
-    if (!validation.ok) {
+    if ('error' in validation) {
       throw new Error(validation.error)
     }
     const newSession = createSession(nickname, age)
@@ -247,7 +247,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
   const feedbackByGameId = useMemo(() => {
     const map: Record<string, GameFeedback[]> = {}
     for (const fb of feedbackList) {
-      ;(map[fb.gameId] ??= []).push(fb)
+      ; (map[fb.gameId] ??= []).push(fb)
     }
     return map
   }, [feedbackList])
