@@ -30,12 +30,12 @@ export function GameModal({ game }: GameModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label={`Jugando ${game.title}`}
     >
-      <div className="flex h-[90vh] w-full max-w-5xl flex-col border-4 border-arcade-gold bg-arcade-blue shadow-[12px_12px_0_0_#000]">
+      <div className="flex h-[90vh] w-full max-w-[95vw] flex-col border-4 border-arcade-gold bg-arcade-blue shadow-[12px_12px_0_0_#000] xl:max-w-[90vw]">
         <header className="flex items-center justify-between border-b-4 border-black bg-arcade-dark px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="inline-block h-3 w-3 animate-pulse bg-red-500" />
