@@ -2,6 +2,7 @@ import { useState, useRef, type ChangeEvent, type FormEvent } from 'react'
 import { useArcade } from '../../hooks/useArcade'
 import { PixelInput } from '../UI/PixelInput'
 import type { AgeRange } from '../../types'
+import { uploadImageToCloudinary } from '../../utils/cloudinary'
 
 export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
   const { addCustomGame } = useArcade()
@@ -10,6 +11,7 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
   const [embedUrl, setEmbedUrl] = useState('')
   const [ageRange, setAgeRange] = useState<AgeRange>('kids')
   const [description, setDescription] = useState('')
+  const [loading, setLoading] = useState(false)
   
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [scale, setScale] = useState(1)
@@ -30,55 +32,65 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
     }
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!title || !embedUrl || !imageSrc) return
 
-    // Draw to canvas with current scale
     const canvas = canvasRef.current
     const img = imageRef.current
-    if (canvas && img) {
+    if (!canvas || !img) return
+
+    setLoading(true)
+
+    try {
       const ctx = canvas.getContext('2d')
-      if (ctx) {
-        // Target thumbnail size
-        const targetWidth = 400
-        const targetHeight = 200
+      if (!ctx) throw new Error('No canvas context')
 
-        canvas.width = targetWidth
-        canvas.height = targetHeight
+      const targetWidth = 400
+      const targetHeight = 200
 
-        // Clear canvas
-        ctx.fillStyle = '#000'
-        ctx.fillRect(0, 0, targetWidth, targetHeight)
+      canvas.width = targetWidth
+      canvas.height = targetHeight
 
-        // Calculate scaled dimensions
-        const scaledWidth = img.naturalWidth * scale
-        const scaledHeight = img.naturalHeight * scale
+      ctx.fillStyle = '#000'
+      ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-        // Center the image
-        const x = (targetWidth - scaledWidth) / 2
-        const y = (targetHeight - scaledHeight) / 2
+      const scaledWidth = img.naturalWidth * scale
+      const scaledHeight = img.naturalHeight * scale
 
-        ctx.drawImage(img, x, y, scaledWidth, scaledHeight)
-        const finalThumbnailUrl = canvas.toDataURL('image/jpeg', 0.8)
+      const x = (targetWidth - scaledWidth) / 2
+      const y = (targetHeight - scaledHeight) / 2
 
-        // Determine biome based on age Range
-        const biome = ageRange === 'kids' ? 'meadow' : ageRange === 'junior' ? 'canyon' : 'sky'
+      ctx.drawImage(img, x, y, scaledWidth, scaledHeight)
+      
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (b) resolve(b)
+          else reject(new Error('Canvas to Blob falló'))
+        }, 'image/jpeg', 0.8)
+      })
 
-        addCustomGame({
-          title,
-          description: description || 'Juego añadido manualmente',
-          embedUrl,
-          ageRange,
-          thumbnailUrl: finalThumbnailUrl,
-          biome,
-          mapPosition: { x: 0, y: 0 } // Not needed for grid view but required by type
-          ,
-          unlockOrder: 0
-        })
+      const secureUrl = await uploadImageToCloudinary(blob)
 
-        onSuccess()
-      }
+      const biome = ageRange === 'kids' ? 'meadow' : ageRange === 'junior' ? 'canyon' : 'sky'
+
+      addCustomGame({
+        title,
+        description: description || 'Juego añadido manualmente',
+        embedUrl,
+        ageRange,
+        thumbnailUrl: secureUrl,
+        biome,
+        mapPosition: { x: 0, y: 0 },
+        unlockOrder: 0
+      })
+
+      onSuccess()
+    } catch (err) {
+      console.error(err)
+      alert('Hubo un error al subir la imagen a Cloudinary.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -170,10 +182,10 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
 
       <button
         type="submit"
-        disabled={!title || !embedUrl || !imageSrc}
+        disabled={loading || !title || !embedUrl || !imageSrc}
         className="mt-6 border-4 border-arcade-gold bg-black px-4 py-3 font-pixel text-[10px] text-arcade-gold transition-colors hover:bg-arcade-gold hover:text-black disabled:cursor-not-allowed disabled:border-gray-600 disabled:text-gray-600 disabled:hover:bg-black"
       >
-        GUARDAR JUEGO
+        {loading ? 'SUBIENDO E INGRESANDO...' : 'GUARDAR JUEGO'}
       </button>
     </form>
   )
