@@ -1,5 +1,6 @@
 import { useArcade } from './hooks/useArcade'
 import { AdminDashboard } from './components/AdminPanel/AdminDashboard'
+import { AdminAuthModal } from './components/AdminPanel/AdminAuthModal'
 import { FeedbackOverlay } from './components/FeedbackOverlay/FeedbackOverlay'
 import { GameModal } from './components/GameModal/GameModal'
 import { HomeView } from './views/HomeView/HomeView'
@@ -46,6 +47,7 @@ export default function App() {
 
       {activeGame && <GameModal game={activeGame} />}
       <FeedbackOverlay />
+      <AdminAuthModal />
       <AdminDashboard />
     </div>
   )

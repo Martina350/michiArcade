@@ -4,10 +4,10 @@ import { useArcade } from '../../hooks/useArcade'
 import { useAdminTrigger } from '../../hooks/useAdminTrigger'
 
 export function HomeView() {
-  const { goToScreen, setAdminPanelOpen } = useArcade()
+  const { goToScreen, setAdminAuthOpen } = useArcade()
 
   const { registerLogoClick } = useAdminTrigger({
-    onActivate: () => setAdminPanelOpen(true),
+    onActivate: () => setAdminAuthOpen(true),
   })
 
   return (

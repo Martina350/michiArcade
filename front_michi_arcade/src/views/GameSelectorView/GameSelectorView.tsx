@@ -85,12 +85,12 @@ export function MapView() {
     completedGameIds,
     openGame,
     logout,
-    setAdminPanelOpen,
+    setAdminAuthOpen,
     feedbackByGameId,
   } = useArcade()
 
   const { registerLogoClick } = useAdminTrigger({
-    onActivate: () => setAdminPanelOpen(true),
+    onActivate: () => setAdminAuthOpen(true),
   })
 
   if (!session) return null

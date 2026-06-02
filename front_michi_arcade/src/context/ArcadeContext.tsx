@@ -140,6 +140,10 @@ function loadCompletedIds(): string[] {
   return readJson<string[]>(STORAGE_KEYS.completedGames, [])
 }
 
+function loadCustomGames(): Game[] {
+  return readJson<Game[]>(STORAGE_KEYS.customGames, [])
+}
+
 export const ArcadeContext = createContext<ArcadeContextValue | null>(null)
 
 interface ArcadeProviderProps {
@@ -161,6 +165,12 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
     string | null
   >(null)
   const [isAdminPanelOpen, setAdminPanelOpen] = useState(false)
+  const [isAdminAuthOpen, setAdminAuthOpen] = useState(false)
+  const [customGames, setCustomGames] = useState<Game[]>(loadCustomGames)
+
+  const allGames = useMemo(() => {
+    return [...GAMES_CATALOG, ...customGames]
+  }, [customGames])
 
   const goToScreen = useCallback((next: ArcadeScreen) => {
     setScreen(next)
@@ -168,8 +178,8 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
 
   const gamesForSession = useMemo(() => {
     if (!session) return []
-    return filterGamesByAgeRange(GAMES_CATALOG, session.ageRange)
-  }, [session])
+    return filterGamesByAgeRange(allGames, session.ageRange)
+  }, [session, allGames])
 
   const unlockedIds = useMemo(
     () => computeUnlockedGameIds(gamesForSession, completedIds),
@@ -208,6 +218,16 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       next.add(gameId)
       writeJson(STORAGE_KEYS.completedGames, [...next])
       return next
+    })
+  }, [])
+
+  const addCustomGame = useCallback((gameData: Omit<Game, 'id'>) => {
+    const newId = `custom-${Date.now()}`
+    const newGame: Game = { ...gameData, id: newId }
+    setCustomGames((prev) => {
+      const updated = [...prev, newGame]
+      writeJson(STORAGE_KEYS.customGames, updated)
+      return updated
     })
   }, [])
 
@@ -265,7 +285,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       session,
       registerStudent,
       logout,
-      allGames: GAMES_CATALOG,
+      allGames,
       gamesForSession,
       isGameUnlocked,
       markGameCompleted,
@@ -280,6 +300,10 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       getHighScores,
       isAdminPanelOpen,
       setAdminPanelOpen,
+      isAdminAuthOpen,
+      setAdminAuthOpen,
+      customGames,
+      addCustomGame,
     }),
     [
       screen,
@@ -287,6 +311,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       session,
       registerStudent,
       logout,
+      allGames,
       gamesForSession,
       isGameUnlocked,
       markGameCompleted,
@@ -299,6 +324,9 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       feedbackByGameId,
       getHighScores,
       isAdminPanelOpen,
+      isAdminAuthOpen,
+      customGames,
+      addCustomGame,
     ],
   )
 

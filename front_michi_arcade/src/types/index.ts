@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   session: 'michi_arcade_session',
   feedback: 'michi_arcade_feedback',
   completedGames: 'michi_arcade_completed_games',
+  customGames: 'michi_arcade_custom_games',
 } as const
 
 export type AgeRange = 'kids' | 'junior' | 'teens'
@@ -99,4 +100,8 @@ export interface ArcadeContextValue {
   getHighScores: (limit?: number) => GameStats[]
   isAdminPanelOpen: boolean
   setAdminPanelOpen: (open: boolean) => void
+  isAdminAuthOpen: boolean
+  setAdminAuthOpen: (open: boolean) => void
+  customGames: Game[]
+  addCustomGame: (game: Omit<Game, 'id'>) => void
 }
