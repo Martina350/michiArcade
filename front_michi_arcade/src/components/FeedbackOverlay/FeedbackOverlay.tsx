@@ -1,15 +1,15 @@
 import { useMemo } from 'react'
-import { GAMES_CATALOG } from '../../context/ArcadeContext'
+
 import { useArcade } from '../../hooks/useArcade'
 import { StarRating } from '../UI/StarRating'
 import fondoMadera from '../../assets/img/fondoMadera.png'
 
 export function FeedbackOverlay() {
-  const { pendingFeedbackGameId, submitFeedback } = useArcade()
+  const { pendingFeedbackGameId, submitFeedback, allGames } = useArcade()
 
   const game = useMemo(
-    () => GAMES_CATALOG.find((g) => g.id === pendingFeedbackGameId),
-    [pendingFeedbackGameId],
+    () => allGames.find((g) => g.id === pendingFeedbackGameId),
+    [pendingFeedbackGameId, allGames],
   )
 
   if (!pendingFeedbackGameId || !game) return null
