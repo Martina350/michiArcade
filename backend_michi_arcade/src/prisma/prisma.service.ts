@@ -1,9 +1,22 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
+  constructor() {
+    const connectionString =
+      process.env.DATABASE_URL ||
+      'postgresql://dummy:dummy@localhost:5432/dummy';
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaPg(pool);
+    super({ adapter });
+  }
+
   async onModuleInit() {
-    await this.$connect();
+    if (process.env.NODE_ENV !== 'test') {
+      await this.$connect();
+    }
   }
 }

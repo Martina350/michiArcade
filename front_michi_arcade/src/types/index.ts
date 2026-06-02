@@ -83,7 +83,7 @@ export interface ArcadeContextValue {
   screen: ArcadeScreen
   goToScreen: (screen: ArcadeScreen) => void
   session: StudentSession | null
-  registerStudent: (nickname: string, age: number) => StudentSession
+  registerStudent: (nickname: string, age: number) => Promise<StudentSession>
   logout: () => void
   allGames: readonly Game[]
   gamesForSession: Game[]
@@ -103,5 +103,5 @@ export interface ArcadeContextValue {
   isAdminAuthOpen: boolean
   setAdminAuthOpen: (open: boolean) => void
   customGames: Game[]
-  addCustomGame: (game: Omit<Game, 'id'>) => void
+  addCustomGame: (game: Omit<Game, 'id'>) => Promise<void>
 }

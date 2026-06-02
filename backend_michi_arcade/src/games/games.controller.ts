@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
 import { GamesService } from './games.service';
 import { Prisma } from '@prisma/client';
 
@@ -14,6 +14,11 @@ export class GamesController {
   @Get()
   async findAll() {
     return this.gamesService.findAll();
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() data: Prisma.GameUpdateInput) {
+    return this.gamesService.update(id, data);
   }
 
   @Get('ranking')

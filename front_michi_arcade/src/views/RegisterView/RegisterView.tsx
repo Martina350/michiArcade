@@ -85,7 +85,7 @@ export function RegisterView() {
     }
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setSubmitAttempted(true)
     setTouched({ nickname: true, age: true })
@@ -95,7 +95,11 @@ export function RegisterView() {
 
     if (nextErrors.nickname || nextErrors.age) return
 
-    registerStudent(nickname, parseInt(ageInput, 10))
+    try {
+      await registerStudent(nickname, parseInt(ageInput, 10))
+    } catch (err: any) {
+      alert(err.message || 'Error al ingresar')
+    }
   }
 
   return (

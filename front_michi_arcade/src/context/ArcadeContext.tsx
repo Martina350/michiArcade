@@ -1,6 +1,7 @@
 import {
   createContext,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -11,6 +12,8 @@ import type {
   Game,
   GameFeedback,
   StudentSession,
+  MapBiome,
+  AgeRange,
 } from '../types'
 import { STORAGE_KEYS } from '../types'
 import {
@@ -144,6 +147,18 @@ function loadCustomGames(): Game[] {
   return readJson<Game[]>(STORAGE_KEYS.customGames, [])
 }
 
+const mapBackendGameToFrontend = (bg: any): Game => ({
+  id: bg.id,
+  title: bg.title,
+  description: bg.description || '',
+  ageRange: bg.ageRange as AgeRange,
+  embedUrl: bg.embedUrl,
+  biome: bg.biome as MapBiome,
+  mapPosition: { x: bg.mapPositionX, y: bg.mapPositionY },
+  unlockOrder: bg.unlockOrder,
+  thumbnailUrl: bg.thumbnailUrl || undefined,
+})
+
 export const ArcadeContext = createContext<ArcadeContextValue | null>(null)
 
 interface ArcadeProviderProps {
@@ -167,10 +182,48 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
   const [isAdminPanelOpen, setAdminPanelOpen] = useState(false)
   const [isAdminAuthOpen, setAdminAuthOpen] = useState(false)
   const [customGames, setCustomGames] = useState<Game[]>(loadCustomGames)
+  const [games, setGames] = useState<Game[]>([])
+
+  const fetchGames = useCallback(async () => {
+    try {
+      const res = await fetch('http://localhost:3000/games')
+      if (res.ok) {
+        const data = await res.json()
+        
+        const mappedGames = data.map(mapBackendGameToFrontend)
+        setGames(mappedGames)
+
+        const allFeedback: GameFeedback[] = []
+        data.forEach((bg: any) => {
+          if (bg.ratings) {
+            bg.ratings.forEach((r: any) => {
+              allFeedback.push({
+                gameId: bg.id,
+                stars: r.stars as 1 | 2 | 3 | 4 | 5,
+                nickname: r.user?.username || 'MichiPlayer',
+                timestamp: new Date(r.createdAt).getTime(),
+              })
+            })
+          }
+        })
+        setFeedbackList(allFeedback)
+        writeJson(STORAGE_KEYS.feedback, allFeedback)
+      } else {
+        setGames([...GAMES_CATALOG, ...customGames])
+      }
+    } catch (err) {
+      console.error('Error fetching games from backend:', err)
+      setGames([...GAMES_CATALOG, ...customGames])
+    }
+  }, [customGames])
+
+  useEffect(() => {
+    fetchGames()
+  }, [fetchGames])
 
   const allGames = useMemo(() => {
-    return [...GAMES_CATALOG, ...customGames]
-  }, [customGames])
+    return games
+  }, [games])
 
   const goToScreen = useCallback((next: ArcadeScreen) => {
     setScreen(next)
@@ -191,16 +244,45 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
     [unlockedIds],
   )
 
-  const registerStudent = useCallback((nickname: string, age: number) => {
+  const registerStudent = useCallback(async (nickname: string, age: number) => {
     const validation = validateRegistration(nickname, age)
     if ('error' in validation) {
       throw new Error(validation.error)
     }
-    const newSession = createSession(nickname, age)
-    setSession(newSession)
-    writeJson(STORAGE_KEYS.session, newSession)
-    setScreen('map')
-    return newSession
+
+    try {
+      const res = await fetch('http://localhost:3000/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: nickname, age }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Error al ingresar en el servidor')
+      }
+
+      const userData = await res.json()
+      const newSession: StudentSession = {
+        nickname: userData.username,
+        age: userData.age,
+        ageRange: age >= 15 ? 'teens' : age >= 10 ? 'junior' : 'kids',
+        createdAt: new Date().toISOString(),
+      }
+
+      localStorage.setItem('michi_arcade_user_id', userData.id)
+
+      setSession(newSession)
+      writeJson(STORAGE_KEYS.session, newSession)
+      setScreen('map')
+      return newSession
+    } catch (err) {
+      console.error('Error contacting backend for login, falling back to local session:', err)
+      const newSession = createSession(nickname, age)
+      setSession(newSession)
+      writeJson(STORAGE_KEYS.session, newSession)
+      setScreen('map')
+      return newSession
+    }
   }, [])
 
   const logout = useCallback(() => {
@@ -208,6 +290,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
     setActiveGame(null)
     setPendingFeedbackGameId(null)
     localStorage.removeItem(STORAGE_KEYS.session)
+    localStorage.removeItem('michi_arcade_user_id')
     setScreen('home')
   }, [])
 
@@ -221,15 +304,43 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
     })
   }, [])
 
-  const addCustomGame = useCallback((gameData: Omit<Game, 'id'>) => {
-    const newId = `custom-${Date.now()}`
-    const newGame: Game = { ...gameData, id: newId }
-    setCustomGames((prev) => {
-      const updated = [...prev, newGame]
-      writeJson(STORAGE_KEYS.customGames, updated)
-      return updated
-    })
-  }, [])
+  const addCustomGame = useCallback(async (gameData: Omit<Game, 'id'>) => {
+    try {
+      const payload = {
+        title: gameData.title,
+        description: gameData.description || 'Juego añadido manualmente',
+        ageRange: gameData.ageRange,
+        embedUrl: gameData.embedUrl,
+        biome: gameData.biome,
+        mapPositionX: gameData.mapPosition.x,
+        mapPositionY: gameData.mapPosition.y,
+        unlockOrder: gameData.unlockOrder,
+        thumbnailUrl: gameData.thumbnailUrl || null,
+      }
+
+      const res = await fetch('http://localhost:3000/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        throw new Error('Error al registrar juego en el servidor')
+      }
+
+      await fetchGames()
+    } catch (err) {
+      console.error('Error adding custom game to backend, adding locally:', err)
+      const newId = `custom-${Date.now()}`
+      const newGame: Game = { ...gameData, id: newId }
+      setCustomGames((prev) => {
+        const updated = [...prev, newGame]
+        writeJson(STORAGE_KEYS.customGames, updated)
+        return updated
+      })
+      setGames((prev) => [...prev, newGame])
+    }
+  }, [fetchGames])
 
   const openGame = useCallback(
     (game: Game) => {
@@ -244,7 +355,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
   }, [])
 
   const submitFeedback = useCallback(
-    (gameId: string, stars: 1 | 2 | 3 | 4 | 5) => {
+    async (gameId: string, stars: 1 | 2 | 3 | 4 | 5) => {
       if (!session) return
 
       const entry: GameFeedback = {
@@ -260,6 +371,33 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
         return next
       })
       setPendingFeedbackGameId(null)
+
+      try {
+        const userId = localStorage.getItem('michi_arcade_user_id')
+        const payload: any = {
+          gameId,
+          stars,
+        }
+
+        if (userId) {
+          payload.userId = userId
+        } else {
+          payload.username = session.nickname
+          payload.age = session.age
+        }
+
+        const res = await fetch('http://localhost:3000/ratings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+
+        if (!res.ok) {
+          throw new Error('Error al enviar calificación al servidor')
+        }
+      } catch (err) {
+        console.error('Backend rating sync failed, kept local only:', err)
+      }
     },
     [session],
   )
@@ -274,8 +412,8 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
 
   const getHighScores = useCallback(
     (limit = 20) =>
-      aggregateGameStats(GAMES_CATALOG, feedbackList).slice(0, limit),
-    [feedbackList],
+      aggregateGameStats(allGames, feedbackList).slice(0, limit),
+    [allGames, feedbackList],
   )
 
   const value = useMemo<ArcadeContextValue>(
