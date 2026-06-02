@@ -6,7 +6,16 @@ export class RatingsController {
   constructor(private readonly ratingsService: RatingsService) {}
 
   @Post()
-  async submitRating(@Body() body: { userId: string; gameId: string; stars: number }) {
-    return this.ratingsService.submitRating(body.userId, body.gameId, body.stars);
+  async submitRating(
+    @Body()
+    body: {
+      userId?: string;
+      username?: string;
+      age?: number;
+      gameId: string;
+      stars: number;
+    },
+  ) {
+    return this.ratingsService.submitRating(body);
   }
 }

@@ -24,10 +24,22 @@ export class UsersService {
     });
   }
 
-  async updateRefreshToken(id: string, refreshToken: string | null): Promise<User> {
-    return this.prisma.user.update({
-      where: { id },
-      data: { refreshToken },
+  async findOrCreate(username: string, age: number): Promise<User> {
+    const user = await this.findByUsername(username);
+    if (user) {
+      if (user.age !== age) {
+        return this.prisma.user.update({
+          where: { id: user.id },
+          data: { age },
+        });
+      }
+      return user;
+    }
+    return this.prisma.user.create({
+      data: {
+        username,
+        age,
+      },
     });
   }
 }
