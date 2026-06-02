@@ -3,6 +3,7 @@ import type { Game } from '../../types'
 import { useArcade } from '../../hooks/useArcade'
 import { useAdminTrigger } from '../../hooks/useAdminTrigger'
 import buttonExit from '../../assets/img/buttonExit.png'
+import logoMichiArcade from '../../assets/img/logoMichiArcade.png'
 
 function GameCard({
   game,
@@ -100,9 +101,14 @@ export function MapView() {
         <button
           type="button"
           onClick={registerLogoClick}
-          className="cursor-pointer border-none bg-transparent text-left transition-transform hover:scale-105"
+          className="flex cursor-pointer items-center gap-4 border-none bg-transparent text-left transition-transform hover:scale-105"
         >
-          <p className="font-pixel text-[8px] text-arcade-gold">MICHI MONEY ARCADE</p>
+          <img
+            src={logoMichiArcade}
+            alt="Michi Arcade"
+            className="h-auto w-full max-w-[140px] drop-shadow-md"
+            draggable={false}
+          />
           <h1 className="font-pixel text-[12px] text-arcade-cyan drop-shadow-md">
             Hola, {session.nickname}!
           </h1>
@@ -126,7 +132,7 @@ export function MapView() {
           <img
             src={buttonExit}
             alt="SALIR"
-            className="pixel-canvas h-auto w-full max-w-[100px] drop-shadow-[0_5px_10px_rgba(0,0,0,0.5)] hover:drop-shadow-[0_8px_15px_rgba(255,100,100,0.4)]"
+            className="pixel-canvas h-auto w-full max-w-[140px] drop-shadow-[0_5px_10px_rgba(0,0,0,0.5)] hover:drop-shadow-[0_8px_15px_rgba(255,100,100,0.4)]"
             draggable={false}
           />
         </button>
