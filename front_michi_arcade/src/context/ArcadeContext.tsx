@@ -24,6 +24,8 @@ import {
   validateRegistration,
 } from './arcadeLogic'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+
 export const GAMES_CATALOG: readonly Game[] = [
   {
     id: 'coin-dash-junior',
@@ -186,7 +188,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
 
   const fetchGames = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:3000/games')
+      const res = await fetch(`${API_BASE_URL}/games`)
       if (res.ok) {
         const data = await res.json()
         
@@ -251,7 +253,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
     }
 
     try {
-      const res = await fetch('http://localhost:3000/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: nickname, age }),
@@ -318,7 +320,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
         thumbnailUrl: gameData.thumbnailUrl || null,
       }
 
-      const res = await fetch('http://localhost:3000/games', {
+      const res = await fetch(`${API_BASE_URL}/games`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -339,6 +341,54 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
         return updated
       })
       setGames((prev) => [...prev, newGame])
+    }
+  }, [fetchGames])
+
+  const updateGame = useCallback(async (gameId: string, gameData: Partial<Game>) => {
+    try {
+      const payload: any = {}
+      if (gameData.title !== undefined) payload.title = gameData.title
+      if (gameData.description !== undefined) payload.description = gameData.description
+      if (gameData.ageRange !== undefined) {
+        payload.ageRange = gameData.ageRange
+        payload.biome = gameData.ageRange === 'kids' ? 'meadow' : gameData.ageRange === 'junior' ? 'canyon' : 'sky'
+      }
+      if (gameData.embedUrl !== undefined) payload.embedUrl = gameData.embedUrl
+      if (gameData.thumbnailUrl !== undefined) payload.thumbnailUrl = gameData.thumbnailUrl
+      if (gameData.mapPosition !== undefined) {
+        payload.mapPositionX = gameData.mapPosition.x
+        payload.mapPositionY = gameData.mapPosition.y
+      }
+      if (gameData.unlockOrder !== undefined) payload.unlockOrder = gameData.unlockOrder
+
+      const res = await fetch(`${API_BASE_URL}/games/${gameId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        throw new Error('Error al actualizar juego en el servidor')
+      }
+
+      await fetchGames()
+    } catch (err) {
+      console.error('Error updating game in backend, updating locally:', err)
+      
+      const updateLocalGame = (g: Game): Game => {
+        if (g.id !== gameId) return g
+        const updatedBiome = gameData.ageRange
+          ? (gameData.ageRange === 'kids' ? 'meadow' : gameData.ageRange === 'junior' ? 'canyon' : 'sky')
+          : g.biome
+        return { ...g, ...gameData, biome: updatedBiome }
+      }
+
+      setCustomGames((prev) => {
+        const updated = prev.map(updateLocalGame)
+        writeJson(STORAGE_KEYS.customGames, updated)
+        return updated
+      })
+      setGames((prev) => prev.map(updateLocalGame))
     }
   }, [fetchGames])
 
@@ -386,7 +436,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
           payload.age = session.age
         }
 
-        const res = await fetch('http://localhost:3000/ratings', {
+        const res = await fetch(`${API_BASE_URL}/ratings`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -442,6 +492,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       setAdminAuthOpen,
       customGames,
       addCustomGame,
+      updateGame,
     }),
     [
       screen,
@@ -465,6 +516,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       isAdminAuthOpen,
       customGames,
       addCustomGame,
+      updateGame,
     ],
   )
 

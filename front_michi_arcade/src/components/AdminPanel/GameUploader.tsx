@@ -15,8 +15,30 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
   
   const [imageSrc, setImageSrc] = useState<string | null>(null)
   const [scale, setScale] = useState(1)
+  const [detectedBgColor, setDetectedBgColor] = useState('rgba(0,0,0,0)')
+  
   const imageRef = useRef<HTMLImageElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const handleImageLoad = () => {
+    const img = imageRef.current
+    if (img) {
+      try {
+        const tempCanvas = document.createElement('canvas')
+        tempCanvas.width = 1
+        tempCanvas.height = 1
+        const tempCtx = tempCanvas.getContext('2d')
+        if (tempCtx) {
+          tempCtx.drawImage(img, 0, 0, 1, 1)
+          const pixel = tempCtx.getImageData(0, 0, 1, 1).data
+          const rgba = `rgba(${pixel[0]}, ${pixel[1]}, ${pixel[2]}, ${pixel[3] / 255})`
+          setDetectedBgColor(rgba)
+        }
+      } catch (e) {
+        console.warn('No se pudo extraer el color de fondo', e)
+      }
+    }
+  }
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -52,7 +74,8 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
       canvas.width = targetWidth
       canvas.height = targetHeight
 
-      ctx.fillStyle = '#000'
+      // Rellena el canvas usando el color de fondo detectado
+      ctx.fillStyle = detectedBgColor
       ctx.fillRect(0, 0, targetWidth, targetHeight)
 
       const scaledWidth = img.naturalWidth * scale
@@ -66,8 +89,8 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((b) => {
           if (b) resolve(b)
-          else reject(new Error('Canvas to Blob falló'))
-        }, 'image/jpeg', 0.8)
+          else reject(new Error('Canvas a Blob falló'))
+        }, 'image/png')
       })
 
       const secureUrl = await uploadImageToCloudinary(blob)
@@ -143,29 +166,70 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
         />
 
         {imageSrc && (
-          <div className="mt-4 flex flex-col items-center gap-4 border-4 border-dashed border-[#8f563b] bg-black/40 p-4">
-            <p className="text-[6px] text-white/60">Previsualización (recuadro de 400x200)</p>
+          <div className="mt-4 flex flex-col items-center gap-4 border-4 border-dashed border-[#8f563b] bg-black/40 p-4 w-full">
+            <p className="text-[6px] text-white/60">Vista previa interactiva (Simulación de Tarjeta en el Juego)</p>
             
-            {/* Contenedor simulando el tamaño final */}
-            <div className="relative h-[200px] w-[400px] overflow-hidden bg-black shadow-inner">
-              <img
-                ref={imageRef}
-                src={imageSrc}
-                alt="Preview"
-                style={{
-                  transform: `scale(${scale})`,
-                  transformOrigin: 'center center',
-                  objectFit: 'contain',
-                }}
-                className="absolute inset-0 m-auto h-full w-full"
+            {/* Contenedor que imita exactamente la card del juego */}
+            <div className="relative h-[200px] w-[400px] overflow-hidden rounded-full border-4 border-arcade-cyan shadow-xl select-none">
+              {/* Fondo del bioma */}
+              <div
+                className={`absolute inset-0 ${
+                  ageRange === 'kids'
+                    ? 'bg-gradient-to-br from-green-400 to-emerald-800'
+                    : ageRange === 'junior'
+                      ? 'bg-gradient-to-br from-orange-400 to-red-800'
+                      : 'bg-gradient-to-br from-blue-400 to-indigo-800'
+                }`}
               />
+
+              {/* Imagen con escala y fondo detectado */}
+              <div 
+                className="absolute inset-0 overflow-hidden"
+                style={{ backgroundColor: detectedBgColor }}
+              >
+                <img
+                  ref={imageRef}
+                  src={imageSrc}
+                  alt="Preview"
+                  onLoad={handleImageLoad}
+                  style={{
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'center center',
+                    objectFit: 'contain',
+                  }}
+                  className="absolute inset-0 m-auto h-full w-full"
+                  draggable={false}
+                />
+              </div>
+
+              {/* Glassy overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-white/10" />
+
+              {/* Glossy reflection */}
+              <div className="absolute left-0 right-0 top-0 h-1/2 rounded-t-full bg-gradient-to-b from-white/40 to-transparent" />
+
+              {/* Contenido */}
+              <div className="absolute inset-0 flex flex-col items-center justify-between p-6 px-12">
+                <h3 className="font-pixel text-[12px] text-white drop-shadow-[2px_2px_0_#000] text-center max-w-[280px]">
+                  {title || 'NUEVO JUEGO'}
+                </h3>
+
+                <div className="flex w-full items-end justify-between">
+                  <div className="flex h-7 items-center justify-center rounded-full bg-black/60 px-4 shadow-inner backdrop-blur-sm">
+                    <span className="font-pixel text-[8px] text-white">▶ JUGAR</span>
+                  </div>
+                  <div className="font-pixel text-[6px] text-arcade-cyan drop-shadow-[1px_1px_0_#000]">
+                    [CLICK]
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex w-full items-center gap-4">
+            <div className="flex w-full max-w-[400px] items-center gap-4">
               <span className="text-[10px]">➖</span>
               <input
                 type="range"
-                min="0.5"
+                min="0.2"
                 max="3"
                 step="0.05"
                 value={scale}

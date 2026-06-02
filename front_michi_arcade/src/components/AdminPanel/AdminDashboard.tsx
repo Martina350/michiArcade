@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react'
 import { AGE_RANGE_LABELS } from '../../types'
 import { useArcade } from '../../hooks/useArcade'
 import { GameUploader } from './GameUploader'
+import { GameEditor } from './GameEditor'
 import fondoMadera from '../../assets/img/fondoMadera.png'
 import buttonBack from '../../assets/img/buttonBack.png'
 
-type AdminTab = 'scores' | 'upload'
+type AdminTab = 'scores' | 'upload' | 'edit'
 
 export function AdminDashboard() {
   const { isAdminPanelOpen, setAdminPanelOpen, getHighScores } = useArcade()
@@ -69,6 +70,16 @@ export function AdminDashboard() {
             >
               Cargar Juego
             </button>
+            <button
+              onClick={() => setActiveTab('edit')}
+              className={`px-4 py-2 uppercase transition-colors ${
+                activeTab === 'edit'
+                  ? 'bg-arcade-gold text-black'
+                  : 'bg-black text-arcade-gold hover:bg-[#8f563b] hover:text-white'
+              }`}
+            >
+              Editar Juego
+            </button>
           </nav>
 
           <div className="flex-1 overflow-auto p-2">
@@ -120,6 +131,10 @@ export function AdminDashboard() {
 
             {activeTab === 'upload' && (
               <GameUploader onSuccess={() => setActiveTab('scores')} />
+            )}
+
+            {activeTab === 'edit' && (
+              <GameEditor onSuccess={() => setActiveTab('scores')} />
             )}
           </div>
         </div>

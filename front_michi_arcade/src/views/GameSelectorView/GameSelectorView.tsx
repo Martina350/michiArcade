@@ -38,10 +38,10 @@ function GameCard({
           }`}
       />
 
-      {/* Fake Thumbnail image to simulate games */}
+      {/* Thumbnail image */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 mix-blend-overlay"
-        style={{ backgroundImage: `url(https://picsum.photos/seed/${game.id}/400/200)` }}
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${game.thumbnailUrl || `https://picsum.photos/seed/${game.id}/400/200`})` }}
       />
 
       {/* Glassy overlay for the pill look */}
