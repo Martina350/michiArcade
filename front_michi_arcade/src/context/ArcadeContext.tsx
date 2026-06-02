@@ -392,6 +392,28 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
     }
   }, [fetchGames])
 
+  const deleteGame = useCallback(async (gameId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/games/${gameId}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error('Error al eliminar juego en el servidor')
+      }
+
+      await fetchGames()
+    } catch (err) {
+      console.error('Error deleting game in backend, deleting locally:', err)
+      setCustomGames((prev) => {
+        const updated = prev.filter((g) => g.id !== gameId)
+        writeJson(STORAGE_KEYS.customGames, updated)
+        return updated
+      })
+      setGames((prev) => prev.filter((g) => g.id !== gameId))
+    }
+  }, [fetchGames])
+
   const openGame = useCallback(
     (game: Game) => {
       if (!isGameUnlocked(game.id)) return
@@ -423,17 +445,13 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       setPendingFeedbackGameId(null)
 
       try {
-        const userId = localStorage.getItem('michi_arcade_user_id')
-        const payload: any = {
+        // No login system — always identify by session nickname + age.
+        // This lets backend create a new rating row every time (no upsert).
+        const payload = {
           gameId,
           stars,
-        }
-
-        if (userId) {
-          payload.userId = userId
-        } else {
-          payload.username = session.nickname
-          payload.age = session.age
+          username: session.nickname,
+          age: session.age,
         }
 
         const res = await fetch(`${API_BASE_URL}/ratings`, {
@@ -493,6 +511,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       customGames,
       addCustomGame,
       updateGame,
+      deleteGame,
     }),
     [
       screen,
@@ -517,6 +536,7 @@ export function ArcadeProvider({ children }: ArcadeProviderProps) {
       customGames,
       addCustomGame,
       updateGame,
+      deleteGame,
     ],
   )
 

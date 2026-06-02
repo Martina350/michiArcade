@@ -14,7 +14,9 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false)
   
   const [imageSrc, setImageSrc] = useState<string | null>(null)
-  const [scale, setScale] = useState(1)
+  const [scale, setScale] = useState(1) // Multiplicador de escala (1 = cover por defecto)
+  const [coverScale, setCoverScale] = useState(1)
+  const [imgDimensions, setImgDimensions] = useState<{ width: number; height: number } | null>(null)
   const [detectedBgColor, setDetectedBgColor] = useState('rgba(0,0,0,0)')
   
   const imageRef = useRef<HTMLImageElement>(null)
@@ -23,6 +25,14 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
   const handleImageLoad = () => {
     const img = imageRef.current
     if (img) {
+      const w = img.naturalWidth
+      const h = img.naturalHeight
+      setImgDimensions({ width: w, height: h })
+
+      const cs = Math.max(400 / w, 200 / h)
+      setCoverScale(cs)
+      setScale(1) // Resetea el multiplicador a 1
+
       try {
         const tempCanvas = document.createElement('canvas')
         tempCanvas.width = 1
@@ -78,8 +88,9 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
       ctx.fillStyle = detectedBgColor
       ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-      const scaledWidth = img.naturalWidth * scale
-      const scaledHeight = img.naturalHeight * scale
+      const actualScale = coverScale * scale
+      const scaledWidth = img.naturalWidth * actualScale
+      const scaledHeight = img.naturalHeight * actualScale
 
       const x = (targetWidth - scaledWidth) / 2
       const y = (targetHeight - scaledHeight) / 2
@@ -116,6 +127,12 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
       setLoading(false)
     }
   }
+
+  const actualScale = coverScale * scale
+  const previewWidth = imgDimensions ? imgDimensions.width * actualScale : 400
+  const previewHeight = imgDimensions ? imgDimensions.height * actualScale : 200
+  const previewLeft = (400 - previewWidth) / 2
+  const previewTop = (200 - previewHeight) / 2
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 font-pixel text-[8px] text-arcade-cyan">
@@ -193,11 +210,13 @@ export function GameUploader({ onSuccess }: { onSuccess: () => void }) {
                   alt="Preview"
                   onLoad={handleImageLoad}
                   style={{
-                    transform: `scale(${scale})`,
-                    transformOrigin: 'center center',
-                    objectFit: 'contain',
+                    width: `${previewWidth}px`,
+                    height: `${previewHeight}px`,
+                    left: `${previewLeft}px`,
+                    top: `${previewTop}px`,
+                    position: 'absolute',
                   }}
-                  className="absolute inset-0 m-auto h-full w-full"
+                  className="max-w-none max-h-none m-0"
                   draggable={false}
                 />
               </div>

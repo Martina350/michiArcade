@@ -143,6 +143,15 @@ export class GamesService implements OnModuleInit {
     });
   }
 
+  async delete(id: string): Promise<Game> {
+    await this.prisma.rating.deleteMany({
+      where: { gameId: id },
+    });
+    return this.prisma.game.delete({
+      where: { id },
+    });
+  }
+
   async getRanking() {
     // Fetch all games with their ratings
     const games = await this.prisma.game.findMany({

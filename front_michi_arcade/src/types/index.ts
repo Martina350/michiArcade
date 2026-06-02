@@ -105,4 +105,5 @@ export interface ArcadeContextValue {
   customGames: Game[]
   addCustomGame: (game: Omit<Game, 'id'>) => Promise<void>
   updateGame: (gameId: string, gameData: Partial<Game>) => Promise<void>
+  deleteGame: (gameId: string) => Promise<void>
 }

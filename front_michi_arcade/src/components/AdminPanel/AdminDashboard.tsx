@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react'
 import { AGE_RANGE_LABELS } from '../../types'
 import { useArcade } from '../../hooks/useArcade'
 import { GameUploader } from './GameUploader'
-import { GameEditor } from './GameEditor'
+import { GameManager } from './GameManager'
 import fondoMadera from '../../assets/img/fondoMadera.png'
 import buttonBack from '../../assets/img/buttonBack.png'
 
-type AdminTab = 'scores' | 'upload' | 'edit'
+type AdminTab = 'scores' | 'upload' | 'manage'
 
 export function AdminDashboard() {
   const { isAdminPanelOpen, setAdminPanelOpen, getHighScores } = useArcade()
@@ -24,7 +24,7 @@ export function AdminDashboard() {
     >
       <div
         style={{ backgroundImage: `url(${fondoMadera})` }}
-        className="relative flex max-h-full w-full max-w-4xl flex-col overflow-y-auto border-8 border-[#3b2314] bg-repeat p-2 shadow-[12px_12px_0_0_#000] pixel-canvas"
+        className="arcade-scroll relative flex max-h-full w-full max-w-4xl flex-col overflow-y-auto border-8 border-[#3b2314] bg-repeat p-2 shadow-[12px_12px_0_0_#000] pixel-canvas"
       >
         <div className="flex h-full flex-col gap-4 border-4 border-[#8f563b] bg-black/60 p-6 font-pixel text-[8px] leading-loose text-arcade-cyan backdrop-blur-sm">
           
@@ -71,14 +71,14 @@ export function AdminDashboard() {
               Cargar Juego
             </button>
             <button
-              onClick={() => setActiveTab('edit')}
+              onClick={() => setActiveTab('manage')}
               className={`px-4 py-2 uppercase transition-colors ${
-                activeTab === 'edit'
+                activeTab === 'manage'
                   ? 'bg-arcade-gold text-black'
                   : 'bg-black text-arcade-gold hover:bg-[#8f563b] hover:text-white'
               }`}
             >
-              Editar Juego
+              Lista de Juegos
             </button>
           </nav>
 
@@ -133,8 +133,8 @@ export function AdminDashboard() {
               <GameUploader onSuccess={() => setActiveTab('scores')} />
             )}
 
-            {activeTab === 'edit' && (
-              <GameEditor onSuccess={() => setActiveTab('scores')} />
+            {activeTab === 'manage' && (
+              <GameManager onSuccess={() => setActiveTab('scores')} />
             )}
           </div>
         </div>

@@ -41,5 +41,5 @@ model Rating {
   user User @relation(fields: [userId], references: [id])
   game Game @relation(fields: [gameId], references: [id])
 
-  @@unique([userId, gameId]) // A user can only rate a game once (optional but good practice)
+  // No unique constraint — multiple ratings per user/game are allowed
 }

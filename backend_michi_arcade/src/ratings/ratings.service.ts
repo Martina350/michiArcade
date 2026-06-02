@@ -48,23 +48,7 @@ export class RatingsService {
       throw new BadRequestException('Game not found');
     }
 
-    // Upsert rating so if user already rated, it updates it.
-    const existingRating = await this.prisma.rating.findUnique({
-      where: {
-        userId_gameId: {
-          userId: targetUserId,
-          gameId,
-        },
-      },
-    });
-
-    if (existingRating) {
-      return this.prisma.rating.update({
-        where: { id: existingRating.id },
-        data: { stars },
-      });
-    }
-
+    // Always create a new rating row — multiple ratings per user/game allowed
     return this.prisma.rating.create({
       data: {
         stars,

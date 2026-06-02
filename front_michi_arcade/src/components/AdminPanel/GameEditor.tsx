@@ -5,7 +5,7 @@ import type { AgeRange } from '../../types'
 import { uploadImageToCloudinary } from '../../utils/cloudinary'
 
 export function GameEditor({ onSuccess }: { onSuccess: () => void }) {
-  const { allGames, updateGame } = useArcade()
+  const { allGames, updateGame, deleteGame } = useArcade()
 
   const [selectedGameId, setSelectedGameId] = useState('')
   const [title, setTitle] = useState('')
@@ -16,7 +16,9 @@ export function GameEditor({ onSuccess }: { onSuccess: () => void }) {
 
   const [loading, setLoading] = useState(false)
   const [imageSrc, setImageSrc] = useState<string | null>(null)
-  const [scale, setScale] = useState(1)
+  const [scale, setScale] = useState(1) // Multiplicador de escala (1 = cover por defecto)
+  const [coverScale, setCoverScale] = useState(1)
+  const [imgDimensions, setImgDimensions] = useState<{ width: number; height: number } | null>(null)
   const [detectedBgColor, setDetectedBgColor] = useState('rgba(0,0,0,0)')
 
   const imageRef = useRef<HTMLImageElement>(null)
@@ -25,6 +27,14 @@ export function GameEditor({ onSuccess }: { onSuccess: () => void }) {
   const handleImageLoad = () => {
     const img = imageRef.current
     if (img) {
+      const w = img.naturalWidth
+      const h = img.naturalHeight
+      setImgDimensions({ width: w, height: h })
+
+      const cs = Math.max(400 / w, 200 / h)
+      setCoverScale(cs)
+      setScale(1) // Resetea el multiplicador a 1
+
       try {
         const tempCanvas = document.createElement('canvas')
         tempCanvas.width = 1
@@ -105,8 +115,9 @@ export function GameEditor({ onSuccess }: { onSuccess: () => void }) {
           ctx.fillStyle = detectedBgColor
           ctx.fillRect(0, 0, targetWidth, targetHeight)
 
-          const scaledWidth = img.naturalWidth * scale
-          const scaledHeight = img.naturalHeight * scale
+          const actualScale = coverScale * scale
+          const scaledWidth = img.naturalWidth * actualScale
+          const scaledHeight = img.naturalHeight * actualScale
 
           const x = (targetWidth - scaledWidth) / 2
           const y = (targetHeight - scaledHeight) / 2
@@ -140,6 +151,32 @@ export function GameEditor({ onSuccess }: { onSuccess: () => void }) {
       setLoading(false)
     }
   }
+
+  const handleDelete = async () => {
+    if (!selectedGameId) return
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que deseas eliminar el juego "${selectedGame?.title}"? Esta acción no se puede deshacer.`
+    )
+    if (!confirmDelete) return
+
+    setLoading(true)
+    try {
+      await deleteGame(selectedGameId)
+      setSelectedGameId('') // Resetea el selector de juego
+      onSuccess()
+    } catch (err) {
+      console.error(err)
+      alert('Hubo un error al eliminar el juego.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const actualScale = coverScale * scale
+  const previewWidth = imgDimensions ? imgDimensions.width * actualScale : 400
+  const previewHeight = imgDimensions ? imgDimensions.height * actualScale : 200
+  const previewLeft = (400 - previewWidth) / 2
+  const previewTop = (200 - previewHeight) / 2
 
   return (
     <div className="flex flex-col gap-4 font-pixel text-[8px] text-arcade-cyan">
@@ -251,11 +288,13 @@ export function GameEditor({ onSuccess }: { onSuccess: () => void }) {
                       alt="Preview"
                       onLoad={handleImageLoad}
                       style={{
-                        transform: `scale(${scale})`,
-                        transformOrigin: 'center center',
-                        objectFit: 'contain',
+                        width: `${previewWidth}px`,
+                        height: `${previewHeight}px`,
+                        left: `${previewLeft}px`,
+                        top: `${previewTop}px`,
+                        position: 'absolute',
                       }}
-                      className="absolute inset-0 m-auto h-full w-full"
+                      className="max-w-none max-h-none m-0"
                       draggable={false}
                     />
                   </div>
@@ -302,13 +341,23 @@ export function GameEditor({ onSuccess }: { onSuccess: () => void }) {
 
           <canvas ref={canvasRef} className="hidden" />
 
-          <button
-            type="submit"
-            disabled={loading || !title || !embedUrl}
-            className="mt-6 border-4 border-arcade-gold bg-black px-4 py-3 font-pixel text-[10px] text-arcade-gold transition-colors hover:bg-arcade-gold hover:text-black disabled:cursor-not-allowed disabled:border-gray-600 disabled:text-gray-600 disabled:hover:bg-black"
-          >
-            {loading ? 'ACTUALIZANDO JUEGO...' : 'GUARDAR CAMBIOS'}
-          </button>
+          <div className="mt-6 flex flex-col sm:flex-row gap-4">
+            <button
+              type="submit"
+              disabled={loading || !title || !embedUrl}
+              className="flex-1 border-4 border-arcade-gold bg-black px-4 py-3 font-pixel text-[10px] text-arcade-gold transition-colors hover:bg-arcade-gold hover:text-black disabled:cursor-not-allowed disabled:border-gray-600 disabled:text-gray-600 disabled:hover:bg-black"
+            >
+              {loading ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={loading}
+              className="border-4 border-red-600 bg-black px-4 py-3 font-pixel text-[10px] text-red-600 transition-colors hover:bg-red-600 hover:text-black disabled:cursor-not-allowed disabled:border-gray-600 disabled:text-gray-600 disabled:hover:bg-black"
+            >
+              ELIMINAR JUEGO
+            </button>
+          </div>
         </form>
       )}
     </div>
