@@ -104,4 +104,5 @@ export interface ArcadeContextValue {
   setAdminAuthOpen: (open: boolean) => void
   customGames: Game[]
   addCustomGame: (game: Omit<Game, 'id'>) => Promise<void>
+  updateGame: (gameId: string, gameData: Partial<Game>) => Promise<void>
 }
