@@ -8,8 +8,8 @@ interface CloudinaryResponse {
  * @returns La URL segura de la imagen subida
  */
 export async function uploadImageToCloudinary(file: File | Blob): Promise<string> {
-  const cloudName = 'duoybxhne'
-  const uploadPreset = 'michiarcade_preset'
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
 
   const formData = new FormData()
   formData.append('file', file, 'upload.jpg')

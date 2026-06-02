@@ -85,7 +85,7 @@ export function AdminAuthModal() {
                 <img
                   src={buttonBack}
                   alt="VOLVER"
-                  className="pixel-canvas h-auto w-full max-w-[180px] drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] hover:drop-shadow-[0_20px_35px_rgba(255,215,0,0.4)]"
+                  className="pixel-canvas h-auto w-full max-w-[220px] drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] hover:drop-shadow-[0_20px_35px_rgba(255,215,0,0.4)]"
                   draggable={false}
                 />
               </button>
