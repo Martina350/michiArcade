@@ -11,7 +11,7 @@ type AdminTab = 'scores' | 'upload' | 'manage'
 export function AdminDashboard() {
   const { isAdminPanelOpen, setAdminPanelOpen, getHighScores } = useArcade()
   const [activeTab, setActiveTab] = useState<AdminTab>('scores')
-  
+
   const scores = useMemo(() => getHighScores(50), [getHighScores, isAdminPanelOpen])
 
   if (!isAdminPanelOpen) return null
@@ -27,7 +27,7 @@ export function AdminDashboard() {
         className="arcade-scroll relative flex max-h-full w-full max-w-4xl flex-col overflow-y-auto border-8 border-[#3b2314] bg-repeat p-2 shadow-[12px_12px_0_0_#000] pixel-canvas"
       >
         <div className="flex h-full flex-col gap-4 border-4 border-[#8f563b] bg-black/60 p-6 font-pixel text-[8px] leading-loose text-arcade-cyan backdrop-blur-sm">
-          
+
           <header className="flex flex-wrap items-center justify-between gap-4 border-b-4 border-[#8f563b] pb-4">
             <div>
               <p className="text-[6px] text-arcade-gold drop-shadow-md">Panel de Control</p>
@@ -43,7 +43,7 @@ export function AdminDashboard() {
               <img
                 src={buttonBack}
                 alt="VOLVER"
-                className="h-auto w-24 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
+                className="h-auto w-35 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
                 draggable={false}
               />
             </button>
@@ -52,21 +52,19 @@ export function AdminDashboard() {
           <nav className="flex gap-4 border-b-2 border-[#8f563b] pb-2">
             <button
               onClick={() => setActiveTab('scores')}
-              className={`px-4 py-2 uppercase transition-colors ${
-                activeTab === 'scores'
+              className={`px-4 py-2 uppercase transition-colors ${activeTab === 'scores'
                   ? 'bg-arcade-gold text-black'
                   : 'bg-black text-arcade-gold hover:bg-[#8f563b] hover:text-white'
-              }`}
+                }`}
             >
               High Scores
             </button>
             <button
               onClick={() => setActiveTab('upload')}
-              className={`px-4 py-2 uppercase transition-colors ${
-                activeTab === 'upload'
+              className={`px-4 py-2 uppercase transition-colors ${activeTab === 'upload'
                   ? 'bg-arcade-gold text-black'
                   : 'bg-black text-arcade-gold hover:bg-[#8f563b] hover:text-white'
-              }`}
+                }`}
             >
               Cargar Juego
             </button>

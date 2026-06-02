@@ -2,7 +2,9 @@ import { useCallback } from 'react'
 import type { Game } from '../../types'
 import { useArcade } from '../../hooks/useArcade'
 import { useWindowMessenger } from '../../hooks/useWindowMessenger'
-import { PixelButton } from '../UI/PixelButton'
+
+import buttonExit from '../../assets/img/buttonExit.png'
+import buttonEnd from '../../assets/img/buttonEnd.png'
 
 interface GameModalProps {
   game: Game
@@ -41,9 +43,32 @@ export function GameModal({ game }: GameModalProps) {
               {game.title}
             </h2>
           </div>
-          <PixelButton variant="ghost" onClick={closeGame} className="!py-2 !text-[8px]">
-            ✕ SALIR
-          </PixelButton>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={handleGameCompleted}
+              className="cursor-pointer border-none bg-transparent p-0 transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none"
+            >
+              <img
+                src={buttonEnd}
+                alt="FINALIZAR JUEGO"
+                className="h-auto w-full max-w-[120px] drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] hover:drop-shadow-[0_20px_35px_rgba(138,43,226,0.4)]"
+                draggable={false}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={closeGame}
+              className="cursor-pointer border-none bg-transparent p-0 transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none"
+            >
+              <img
+                src={buttonExit}
+                alt="SALIR"
+                className="h-auto w-full max-w-[120px] drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)] hover:drop-shadow-[0_20px_35px_rgba(255,215,0,0.4)]"
+                draggable={false}
+              />
+            </button>
+          </div>
         </header>
 
         <div className="relative flex-1 bg-black">
@@ -54,9 +79,6 @@ export function GameModal({ game }: GameModalProps) {
             allow="fullscreen"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           />
-          <div className="pointer-events-none absolute bottom-2 right-2 font-pixel text-[6px] text-arcade-cyan/50">
-            DEMO: envía postMessage(&#123; status: &apos;game_completed&apos; &#125;)
-          </div>
         </div>
       </div>
     </div>
